@@ -31,13 +31,11 @@ class QueryRouterSignature(dspy.Signature):
 
 
 class AnswerGenerationSignature(dspy.Signature):
-    """Signature for generating an answer based on the retrieved context."""
-    query: str = dspy.InputField(desc="The user's query")
-    context: str = dspy.InputField(desc="The context retrieved from the vectorstore or search agent")
-    answer: str = dspy.OutputField(desc="The generated answer in markdown format based on the retrieved context. \
-                                        Answer should have bullet points for key information with appropriate citation for every bullet, \
-                                        strictly use provided SOURCE_ID of each CONTENT in the context as the citation label with the LINK as the hyperlink, eg: [source_id] \
-                                        It should look visually good and be easy to read.")
+    """Generate a scientific answer based on the query, retrieved context, and conversation history."""
+    query = dspy.InputField(desc="The scientific question to answer")
+    context = dspy.InputField(desc="Retrieved scientific papers and context")
+    conversation = dspy.InputField(desc="The conversation history")
+    answer = dspy.OutputField(desc="A detailed, accurate scientific answer with inline citations")
 
 
 class AnswerRefinerSignature(dspy.Signature):

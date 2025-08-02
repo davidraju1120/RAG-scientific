@@ -63,16 +63,6 @@ if not st.session_state.api_key_set:
     if openai_api_key:
         st.session_state.openai_api_key = openai_api_key
         os.environ["OPENAI_API_KEY"] = openai_api_key
-        import dspy
-        def configure_dspy_once(api_key):
-            if not hasattr(st.session_state, "dspy_configured"):
-                try:
-                    lm = dspy.Ollama(model='gpt-3.5-turbo', base_url=f"https://integrate.api.nvidia.com/v1/", api_key=api_key)
-                    dspy.configure(lm=lm)
-                    st.session_state.dspy_configured = True
-                except RuntimeError:
-                    pass # Already configured
-        configure_dspy_once(openai_api_key)
         st.session_state.api_key_set = True
         st.success("✅ API Key set successfully!")
         st.rerun()
@@ -84,20 +74,17 @@ else:
         st.session_state.rag_agent = SciQAgent()
 
     # Initialize conversation state if not already set
-    if "rag_agent" not in st.session_state:
-        configure_dspy_once(st.session_state.openai_api_key)
-        st.session_state.rag_agent = SciQAgent()
-        st.session_state.rag_state = SciQAgentState(
-            query="",
-            conversation="",
-            retrieved_context="",
-            generated_answer="",
-            sources=[],
-            messages=[("system", "Welcome to SciQ! Ask me a question about biology.")],
-            feedback="",
-            refinement_count=0,
-            lm=None # lm is now configured globally
-        )
+    if "rag_state" not in st.session_state:
+        st.session_state.rag_state = {
+            "query": "",
+            "conversation": "",
+            "retrieved_context": "",
+            "generated_answer": "",
+            "sources": [],
+            "messages": [{"role": "system", "content": "Welcome to SciQ! Ask me a question about biology."}],
+            "feedback": "",
+            "refinement_count": 0
+        }
 
     # Chat input
     st.markdown("### Ask a question:")
@@ -110,14 +97,14 @@ else:
             st.stop()
 
         # Update state with new query
-        st.session_state.rag_state.query = user_input
-        st.session_state.rag_state.retrieved_context = ""
-        st.session_state.rag_state.messages.append({"role": "user", "content": user_input})
+        st.session_state.rag_state["query"] = user_input
+        st.session_state.rag_state["retrieved_context"] = ""
+        st.session_state.rag_state["messages"].append({"role": "user", "content": user_input})
 
         # Invoke the persisted RAG Agent
         response = st.session_state.rag_agent.invoke(st.session_state.rag_state)
         answer = response["generated_answer"]
-        st.session_state.rag_state.messages.append({"role": "assistant", "content": answer})
+        st.session_state.rag_state["messages"].append({"role": "assistant", "content": answer})
 
         # Extract and display LaTeX equations
         equations = extract_latex_equations(answer)

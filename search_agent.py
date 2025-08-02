@@ -29,7 +29,7 @@ def expand_query(conversation: str) -> List[str]:
     """
     # Create and use the predictor
     expander = dspy.ChainOfThought(QueryExpansionSignature)
-        response = expander(chat_history=conversation)
+    response = expander(chat_history=conversation)
     logger.info(f"expand_query COT: {response}")
 
     return response
@@ -53,14 +53,14 @@ def rank_papers_with_llm(papers: List[Dict[str, str]], query: str) -> List[Dict[
     # Create the predictor
     relevance_predictor = dspy.Predict(RelevanceSignature)
 
-        ranked_papers = []
-        for paper in papers:
-            # Evaluate the paper's relevance using DSPy
-            result = relevance_predictor(
-                paper_title=paper['Title'],
-                paper_abstract=paper['Abstract'],
-                query=query
-            )
+    ranked_papers = []
+    for paper in papers:
+        # Evaluate the paper's relevance using DSPy
+        result = relevance_predictor(
+            paper_title=paper['Title'],
+            paper_abstract=paper['Abstract'],
+            query=query
+        )
 
         # Add paper and score to ranked list
         ranked_papers.append((paper, result.relevance_score))

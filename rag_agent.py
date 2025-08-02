@@ -193,24 +193,27 @@ class SciQAgent:
             Returns:
                 dict: The context of retrieved documents.
             """
-            logger.info("\n\n***RETRIEVE_DOCUMENTS******\n\n")
-            retrieved_docs = self.db.retrieve(state['query'])
-            context = "\n******\n".join([doc.page_content for doc in retrieved_docs])
-            logger.info(f"Successfully retrieved {len(retrieved_docs)} documents from the vectorstore.")
+            logger.info("\n\n***RETRIEVE_DOCUMENTS***\n")
+            # Retrieve relevant documents from the database
+            if not self.db.abstracts:
+                logger.info("No documents in database. Please search for documents first.")
+                return {'retrieved_context': "No documents available. Please search for relevant papers first."}
 
             # Build citation network
-            citation_net = CitationNetwork()
-            citation_net.build_from_context([{"doc_id": getattr(doc, 'metadata', {}).get('doc_id', i), "content": doc.page_content} for i, doc in enumerate(retrieved_docs)])
-            logger.info(f"Citation network built: {citation_net.network}")
+            citation_network = CitationNetwork(self.db.abstracts)
+            citation_graph = citation_network.build_network()
+            logger.info(f"Citation network built with {len(citation_graph.nodes)} nodes and {len(citation_graph.edges)} edges")
 
-            # Evaluate retrieval accuracy (if ground truth is available in state)
-            relevant = state.get('relevant_docs', [])
-            accuracy = evaluate_retrieval_accuracy([getattr(doc, 'metadata', {}).get('doc_id', i) for i, doc in enumerate(retrieved_docs)], relevant) if relevant else None
-            if accuracy is not None:
-                logger.info(f"Retrieval accuracy: {accuracy}")
+            # Evaluate retrieval accuracy (simulated)
+            retrieval_accuracy = evaluate_retrieval_accuracy(state['query'], self.db.abstracts)
+            logger.info(f"Retrieval accuracy: {retrieval_accuracy:.2%}")
 
-            logger.info("\n***END_RETRIEVE_DOCUMENTS******\n\n")
-            return {'retrieved_context': context}
+            # Retrieve relevant documents
+            retrieved_docs = self.db.search(state['query'])
+            context = "\n\n".join([f"SOURCE_ID: {doc['id']}\nCONTENT: {doc['content']}\nLINK: {doc.get('link', 'N/A')}" for doc in retrieved_docs])
+            logger.info(f"Retrieved {len(retrieved_docs)} documents")
+            logger.info("\n***END_RETRIEVE_DOCUMENTS***\n\n")
+            return {'retrieved_context': context, 'retrieval_accuracy': retrieval_accuracy}
 
         def generate_answer(state: SciQAgentState):
             """
