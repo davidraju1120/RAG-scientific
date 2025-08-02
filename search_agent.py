@@ -13,7 +13,7 @@ logger = logging.getLogger('SciQAgent')
 MAX_PAPERS = 5  # Maximum number of papers to return for the search
 
 
-def expand_query(conversation: str, lm: dspy.LM) -> List[str]:
+def expand_query(conversation: str) -> List[str]:
     """
     Expands a scientific query into three versions for searching in arXiv and PubMed.
 
@@ -28,15 +28,14 @@ def expand_query(conversation: str, lm: dspy.LM) -> List[str]:
             - updated_query: An updated query based on the conversation history.
     """
     # Create and use the predictor
-    with dspy.context(lm=lm):
-        expander = dspy.ChainOfThought(QueryExpansionSignature)
+    expander = dspy.ChainOfThought(QueryExpansionSignature)
         response = expander(chat_history=conversation)
     logger.info(f"expand_query COT: {response}")
 
     return response
 
 
-def rank_papers_with_llm(papers: List[Dict[str, str]], query: str, lm: dspy.LM) -> List[Dict[str, str]]:
+def rank_papers_with_llm(papers: List[Dict[str, str]], query: str) -> List[Dict[str, str]]:
     """
     Use LLM to rank papers based on relevance to the query.
 
@@ -52,8 +51,7 @@ def rank_papers_with_llm(papers: List[Dict[str, str]], query: str, lm: dspy.LM) 
     
 
     # Create the predictor
-    with dspy.context(lm=lm):
-        relevance_predictor = dspy.Predict(RelevanceSignature)
+    relevance_predictor = dspy.Predict(RelevanceSignature)
 
         ranked_papers = []
         for paper in papers:
@@ -81,7 +79,7 @@ class SearchAgent:
     """
 
     @staticmethod
-    def search(query: str, conversation: str, lm: dspy.LM, max_results: int = 5) -> List[Dict[str, str]]:
+    def search(query: str, conversation: str, max_results: int = 5) -> List[Dict[str, str]]:
         """
         Executes a search workflow to retrieve and rank research papers based on a given query.
 
@@ -100,7 +98,7 @@ class SearchAgent:
         """
         # Step 1: Expand the original query using the QueryExpansionTool
         try:
-            response = expand_query(conversation, lm=lm)
+            response = expand_query(conversation)
             expanded_queries = response['expanded_queries']
             updated_query = response['updated_query']
             if updated_query:
@@ -113,8 +111,7 @@ class SearchAgent:
         logger.info(f"""Expanded queries: {chr(10).join(expanded_queries)}""")
 
         # setup dspy lm and create the source selection prediction
-        with dspy.context(lm=lm):
-            source_selector = dspy.Predict(SourceSelectionSignature)
+        source_selector = dspy.Predict(SourceSelectionSignature)
 
         all_results = []
         for expanded_query in expanded_queries:
@@ -137,6 +134,6 @@ class SearchAgent:
 
         logger.info(f"\nTotal results: {len(all_results)}")
         # Step 3: Rank the results using the LLM
-        all_results = rank_papers_with_llm(all_results, query, lm=lm)
+        all_results = rank_papers_with_llm(all_results, query)
         # Return top 5 overall results based on LLM relevance scoring
         return all_results[:MAX_PAPERS], updated_query

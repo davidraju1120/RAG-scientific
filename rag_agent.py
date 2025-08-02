@@ -33,7 +33,6 @@ class SciQAgentState(TypedDict):
     feedback: str
     messages: Annotated[List, add_messages]
     refinement_count: int
-    lm: Any
 
 
 class SciQAgent:
@@ -68,7 +67,7 @@ class SciQAgent:
                 logger.info("Query is not in the biology domain. Please ask a biology-related question.")
                 return {'query': "Please ask a biology-related question."}
             full_conversation = "\n".join([msg['content'] for msg in state['messages']])
-            papers, updated_query = SearchAgent.search(state['query'], state['conversation'], lm=state['lm'])
+            papers, updated_query = SearchAgent.search(state['query'], state['conversation'])
             if updated_query and updated_query != state['query']:
                 logger.info(f"Query has been updated to: {updated_query}")
                 state['query'] = updated_query
@@ -99,7 +98,6 @@ class SciQAgent:
             abstract_text = "\n******\n".join(self.db.abstracts)
             # print(f"Abstracts: {abstract_text}")
 
-            dspy.configure(lm=state['lm'])
             query_router = dspy.ChainOfThought(QueryRouterSignature)
             output = query_router(query=state['query'], abstracts=abstract_text)
             logger.info(f"Query routing result: {output}")
@@ -118,7 +116,6 @@ class SciQAgent:
             """
             logger.info("\n\n***GENERATE_FEEDBACK***\n")
             
-            dspy.configure(lm=state['lm'])
             answer_assessor = dspy.Predict(AnswerAssessorSignature)
             assessment = answer_assessor(query=state['query'], context=state['retrieved_context'], generated_answer=state['generated_answer'])
 
@@ -154,7 +151,6 @@ class SciQAgent:
 
             else:
                 
-                dspy.configure(lm=state['lm'])
                 feedback_assessor = dspy.Predict(FeedbackAssessorSignature)
                 assessment = feedback_assessor(feedback=state['feedback'])
                 logger.info(f"Feedback assessment result: {assessment}")
@@ -174,7 +170,6 @@ class SciQAgent:
             logger.info("\n\n***REFINE_ANSWER***\n")
 
             
-            dspy.configure(lm=state['lm'])
             answer_refiner = dspy.Predict(AnswerRefinerSignature)
             answer = answer_refiner(
                 query=state['query'],
@@ -234,7 +229,6 @@ class SciQAgent:
 
             
 
-            dspy.configure(lm=state['lm'])
             answer_generator = dspy.Predict(AnswerGenerationSignature)
             answer = answer_generator(
                 query=state['query'],
