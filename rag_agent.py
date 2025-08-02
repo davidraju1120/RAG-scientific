@@ -26,12 +26,15 @@ with open(os.path.join(os.path.dirname(__file__), 'biology_ontology.json'), 'r',
 
 class SciQAgentState(TypedDict):
     """State dictionary for the RAG Agent, holding conversation context and relevant information."""
-    query: str  # User's query in the current conversation
-    retrieved_context: str  # The context retrieved from documents relevant to the query
-    generated_answer: str  # The answer generated based on the retrieved context
-    feedback: str  # Feedback for refining the current answer (e.g., for hallucinations, inaccuracies)
-    messages: Annotated[List, add_messages]  # History of conversation messages with added context
-    refinement_count: int  # Number of times the answer has been refined
+    query: str
+    conversation: str
+    retrieved_context: str
+    generated_answer: str
+    sources: List[Dict[str, str]]
+    feedback: str
+    messages: Annotated[List, add_messages]
+    refinement_count: int
+    lm: Any
 
 
 class SciQAgent:
@@ -66,9 +69,11 @@ class SciQAgent:
                 logger.info("Query is not in the biology domain. Please ask a biology-related question.")
                 return {'query': "Please ask a biology-related question."}
             full_conversation = "\n".join([msg['content'] for msg in state['messages']])
-            paper_list, updated_query = SearchAgent.search(state['query'], full_conversation)
-
-            # Process URLs to extract images and chunked text and add embeddings to vectorstore
+            papers, updated_query = SearchAgent.search(state['query'], state['conversation'], lm=state['lm'])
+            if updated_query and updated_query != state['query']:
+                logger.info(f"Query has been updated to: {updated_query}")
+                state['query'] = updated_query
+            paper_list = papers
             self.db.process_urls_parallel([paper['Link'] for paper in paper_list if paper['Link']])
             self.db.abstracts.extend([paper['Abstract'] for paper in paper_list if paper['Abstract']])
 
@@ -95,6 +100,7 @@ class SciQAgent:
             abstract_text = "\n******\n".join(self.db.abstracts)
             # print(f"Abstracts: {abstract_text}")
 
+            dspy.configure(lm=state['lm'])
             query_router = dspy.ChainOfThought(QueryRouterSignature)
             output = query_router(query=state['query'], abstracts=abstract_text)
             logger.info(f"Query routing result: {output}")
@@ -113,6 +119,7 @@ class SciQAgent:
             """
             logger.info("\n\n***GENERATE_FEEDBACK***\n")
             
+            dspy.configure(lm=state['lm'])
             answer_assessor = dspy.Predict(AnswerAssessorSignature)
             assessment = answer_assessor(query=state['query'], context=state['retrieved_context'], generated_answer=state['generated_answer'])
 
@@ -148,6 +155,7 @@ class SciQAgent:
 
             else:
                 
+                dspy.configure(lm=state['lm'])
                 feedback_assessor = dspy.Predict(FeedbackAssessorSignature)
                 assessment = feedback_assessor(feedback=state['feedback'])
                 logger.info(f"Feedback assessment result: {assessment}")
@@ -167,11 +175,14 @@ class SciQAgent:
             logger.info("\n\n***REFINE_ANSWER***\n")
 
             
+            dspy.configure(lm=state['lm'])
             answer_refiner = dspy.Predict(AnswerRefinerSignature)
-            answer = answer_refiner(query=state['query'],
-                                    context=state['retrieved_context'],
-                                    generated_answer=state['generated_answer'],
-                                    feedback=state['feedback'])['refined_answer']
+            answer = answer_refiner(
+                query=state['query'],
+                context=state['retrieved_context'],
+                generated_answer=state['generated_answer'],
+                feedback=state['feedback']
+            )['refined_answer']
             logger.info(f"Refined answer: {answer}")
             logger.info(f"refinement count: {state['refinement_count']}")
             logger.info("\n***END_REFINE_ANSWER***\n\n")
@@ -224,10 +235,12 @@ class SciQAgent:
 
             
 
+            dspy.configure(lm=state['lm'])
             answer_generator = dspy.Predict(AnswerGenerationSignature)
             answer = answer_generator(
                 query=state['query'],
-                context=full_conversation + "\n******\n" + state['retrieved_context']
+                context=state['retrieved_context'],
+                conversation=full_conversation
             )['answer']
 
             # Extract and render LaTeX equations
