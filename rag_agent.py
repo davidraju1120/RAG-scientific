@@ -165,7 +165,7 @@ class SciQAgent:
                 dict: The refined answer.
             """
             logger.info("\n\n***REFINE_ANSWER***\n")
-            lm = dspy.LM('openai/gpt-3.5-turbo', api_key=os.getenv("OPENAI_API_KEY"), temperature=0.7)
+
             
             answer_refiner = dspy.Predict(AnswerRefinerSignature)
             answer = answer_refiner(query=state['query'],
@@ -221,7 +221,7 @@ class SciQAgent:
             full_conversation = "\n".join([msg['content'] for msg in state['messages']])
 
             # Use DSPy to generate an answer based on the updated context
-            lm = dspy.LM('openai/gpt-3.5-turbo', api_key=os.getenv("OPENAI_API_KEY"), temperature=0.1)
+
             
 
             answer_generator = dspy.Predict(AnswerGenerationSignature)
