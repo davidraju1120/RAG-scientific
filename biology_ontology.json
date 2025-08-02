@@ -1,0 +1,9 @@
+{
+  "terms": [
+    {"name": "cell", "definition": "The basic structural, functional, and biological unit of all known living organisms."},
+    {"name": "DNA", "definition": "Deoxyribonucleic acid, a molecule that carries genetic instructions."},
+    {"name": "enzyme", "definition": "A protein that catalyzes biochemical reactions."},
+    {"name": "protein", "definition": "Large biomolecules consisting of one or more long chains of amino acid residues."},
+    {"name": "mitosis", "definition": "A process of cell division that results in two genetically identical daughter cells."}
+  ]
+}
