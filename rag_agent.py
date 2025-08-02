@@ -23,6 +23,10 @@ logger = logging.getLogger('SciQAgent')
 with open(os.path.join(os.path.dirname(__file__), 'biology_ontology.json'), 'r', encoding='utf-8') as f:
     BIOLOGY_ONTOLOGY = {term['name'].lower(): term['definition'] for term in json.load(f)['terms']}
 
+# --------- FIX: Configure DSPy LLM only once at module level ---------
+lm = dspy.LM('openai/gpt-3.5-turbo', api_key=os.getenv("OPENAI_API_KEY"), temperature=0.)
+dspy.configure(lm=lm)
+# ---------------------------------------------------------------------
 
 class SciQAgentState(TypedDict):
     """State dictionary for the RAG Agent, holding conversation context and relevant information."""

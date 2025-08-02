@@ -116,8 +116,6 @@ class SearchAgent:
         logger.info(f"""Expanded queries: {chr(10).join(expanded_queries)}""")
 
         # setup dspy lm and create the source selection prediction
-        lm = dspy.LM('openai/gpt-3.5-turbo', api_key=os.getenv("OPENAI_API_KEY"), temperature=0.)
-        dspy.configure(lm=lm)
         source_selector = dspy.Predict(SourceSelectionSignature)
 
         all_results = []
