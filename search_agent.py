@@ -27,10 +27,6 @@ def expand_query(conversation: str, model: str = "openai/gpt-3.5-turbo", tempera
             - expanded_queries: List of three independent search terms.
             - updated_query: An updated query based on the conversation history.
     """
-    # Set up the LLM
-    lm = dspy.LM(model, api_key=os.getenv("OPENAI_API_KEY"), temperature=temperature)
-    dspy.configure(lm=lm)
-
     # Create and use the predictor
     expander = dspy.ChainOfThought(QueryExpansionSignature)
     response = expander(chat_history=conversation)
@@ -53,7 +49,7 @@ def rank_papers_with_llm(papers: List[Dict[str, str]], query: str, model: str = 
     """
     # Set up the LLM with temperature 0 for consistent scoring
     lm = dspy.LM(model, api_key=os.getenv("OPENAI_API_KEY"), temperature=0.)
-    dspy.configure(lm=lm)
+    
 
     # Create the predictor
     relevance_predictor = dspy.Predict(RelevanceSignature)

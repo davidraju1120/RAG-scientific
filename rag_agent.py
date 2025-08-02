@@ -95,9 +95,6 @@ class SciQAgent:
             abstract_text = "\n******\n".join(self.db.abstracts)
             # print(f"Abstracts: {abstract_text}")
 
-            lm = dspy.LM('openai/gpt-3.5-turbo', api_key=os.getenv("OPENAI_API_KEY"), temperature=0.)
-            dspy.configure(lm=lm)
-
             query_router = dspy.ChainOfThought(QueryRouterSignature)
             output = query_router(query=state['query'], abstracts=abstract_text)
             logger.info(f"Query routing result: {output}")
@@ -115,8 +112,7 @@ class SciQAgent:
                 dict: Feedback about the answer (e.g., inaccuracies or hallucinations).
             """
             logger.info("\n\n***GENERATE_FEEDBACK***\n")
-            lm = dspy.LM('openai/gpt-3.5-turbo', api_key=os.getenv("OPENAI_API_KEY"), temperature=0.)
-            dspy.configure(lm=lm)
+            
             answer_assessor = dspy.Predict(AnswerAssessorSignature)
             assessment = answer_assessor(query=state['query'], context=state['retrieved_context'], generated_answer=state['generated_answer'])
 
@@ -151,8 +147,7 @@ class SciQAgent:
                 return "end"
 
             else:
-                lm = dspy.LM('openai/gpt-3.5-turbo', api_key=os.getenv("OPENAI_API_KEY"), temperature=0.)
-                dspy.configure(lm=lm)
+                
                 feedback_assessor = dspy.Predict(FeedbackAssessorSignature)
                 assessment = feedback_assessor(feedback=state['feedback'])
                 logger.info(f"Feedback assessment result: {assessment}")
@@ -171,7 +166,7 @@ class SciQAgent:
             """
             logger.info("\n\n***REFINE_ANSWER***\n")
             lm = dspy.LM('openai/gpt-3.5-turbo', api_key=os.getenv("OPENAI_API_KEY"), temperature=0.7)
-            dspy.configure(lm=lm)
+            
             answer_refiner = dspy.Predict(AnswerRefinerSignature)
             answer = answer_refiner(query=state['query'],
                                     context=state['retrieved_context'],
@@ -227,7 +222,7 @@ class SciQAgent:
 
             # Use DSPy to generate an answer based on the updated context
             lm = dspy.LM('openai/gpt-3.5-turbo', api_key=os.getenv("OPENAI_API_KEY"), temperature=0.1)
-            dspy.configure(lm=lm)
+            
 
             answer_generator = dspy.Predict(AnswerGenerationSignature)
             answer = answer_generator(
