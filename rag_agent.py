@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import List
+from typing import List, Dict
 from typing_extensions import TypedDict
 from typing import Annotated
 
