@@ -1,6 +1,6 @@
 dspy-ai==2.4.3
 langgraph>=0.0.20
-langchain>=0.1.0
+langchain>=0.1.20
 langchain-community>=0.0.20
 streamlit>=1.28.0
 requests>=2.31.0
