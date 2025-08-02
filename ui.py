@@ -63,6 +63,20 @@ if not st.session_state.api_key_set:
     if openai_api_key:
         st.session_state.openai_api_key = openai_api_key
         os.environ["OPENAI_API_KEY"] = openai_api_key
+        
+        # Configure DSPy with the API key
+        import openai
+        openai.api_key = openai_api_key
+        
+        # Configure DSPy with the correct model
+        dspy.configure(
+            lm=dspy.OpenAI(
+                model='gpt-3.5-turbo',
+                api_key=openai_api_key,
+                temperature=0.1
+            )
+        )
+        
         st.session_state.api_key_set = True
         st.success("✅ API Key set successfully!")
         st.rerun()
