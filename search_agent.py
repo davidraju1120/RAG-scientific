@@ -82,6 +82,7 @@ class SearchAgent:
     A search agent that uses a combination of query expansion, arXiv and PubMed searches to find relevant research papers.
     It ranks the results using an LLM to determine relevance to the original query.
     """
+
     @staticmethod
     def search(query: str, conversation: str, max_results: int = 5) -> List[Dict[str, str]]:
         """
@@ -115,14 +116,13 @@ class SearchAgent:
         logger.info(f"""Expanded queries: {chr(10).join(expanded_queries)}""")
 
         # setup dspy lm and create the source selection prediction
-            lm = dspy.LM('openai/gpt-3.5-turbo', api_key=os.getenv("OPENAI_API_KEY"), temperature=0.)
-            dspy.configure(lm=lm)
-            source_selector = dspy.Predict(SourceSelectionSignature)
+        lm = dspy.LM('openai/gpt-3.5-turbo', api_key=os.getenv("OPENAI_API_KEY"), temperature=0.)
+        dspy.configure(lm=lm)
+        source_selector = dspy.Predict(SourceSelectionSignature)
 
         all_results = []
         for expanded_query in expanded_queries:
             logger.info(f"\nSearching for papers with expanded query: {expanded_query}")
-
             source = source_selector(query=expanded_query)['source']
             results = None
 
@@ -131,19 +131,16 @@ class SearchAgent:
                 results = ArxivSearch.search(expanded_query, max_results=max_results)
             elif source.lower() == 'pubmed':
                 results = PubMedSearch.search(expanded_query, max_results=max_results)
-            elif source.lower == 'biorxiv':
+            elif source.lower() == 'biorxiv':
                 results = BioRxivSearch.search(expanded_query, max_results=max_results)
 
-            # Combine results from both tools
+            # Combine results from all tools
             if results and isinstance(results, list):
                 all_results.extend(results)
             time.sleep(.5)
 
-        logger.info(f"\nTotal results: {len(all_results), source}")
-
+        logger.info(f"\nTotal results: {len(all_results)}")
         # Step 3: Rank the results using the LLM
-        # Use the LLM to rank the papers based on relevance to the original query
         all_results = rank_papers_with_llm(all_results, query)
-
         # Return top 5 overall results based on LLM relevance scoring
         return all_results[:MAX_PAPERS], updated_query
